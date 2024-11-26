@@ -1,29 +1,24 @@
-package com.yogift.calculator;
+package com.yogift.calc;
 
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
-
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-
+import org.mvel2.MVEL;
 import java.util.ArrayList;
-
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView workingsTextView;
-    TextView resultsTextView;
-
-    String workings;
-    String formula;
-    String tempFormula;
-
-
+    private TextView workingsTextView;
+    private TextView resultsTextView;
+    private String workings = "";
+    private String formula;
+    private String tempFormula;
+    private boolean leftBracket = true;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,64 +31,66 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
     }
-    private void initTextViews(){
-        workingsTextView=(TextView) findViewById((R.id.workingsTextView));
-        resultsTextView=(TextView) findViewById((R.id.resultsTextView));
+
+    private void initTextViews() {
+        workingsTextView = findViewById(R.id.workingsTextView);
+        resultsTextView = findViewById(R.id.resultsTextView);
     }
 
-    public void equalsOnClick(View view){
-        Double result = null;
-        ScriptEngine engine = new ScriptEngineManager().getEngineByName("rhino");
-        checkForPowerOf();
-
+    public void equalsOnClick(View view) {
+        workings = workingsTextView.getText().toString();
         try{
-            result=(Double) engine.eval(formula);
+            checkForPowerOf();
+            String result =  MVEL.evalToString(formula);
+            resultsTextView.setText(result);
         }
-        catch (ScriptException e){
-            Toast.makeText(this,"Input Invalid",Toast.LENGTH_SHORT).show();
-        }
-
-        if(result!=null){
-            resultsTextView.setText(String.valueOf(result.doubleValue()));
+        catch (Exception e) {
+            resultsTextView.setText(e.toString());
         }
     }
 
-    private void checkForPowerOf(){
+    private void checkForPowerOf() {
         ArrayList<Integer> indexOfPower = new ArrayList<>();
-        for (int i = 0; i<workings.legnth();i++){
-            if(workings.charAt(i)=='^') {
+        for (int i = 0; i < workings.length(); i++) {
+            if (workings.charAt(i) == '^') {
                 indexOfPower.add(i);
             }
         }
         formula = workings;
         tempFormula = workings;
-        for (int i = 0; i< indexOfPower.length();i++){
+        for (int i = 0; i < indexOfPower.size(); i++) {
             changeFormula(indexOfPower.get(i));
         }
-    }
-    private void changeFormula(int index){
-        String numberLeft = "";
-        String numberRight = "";
-
-        for(int i=index+1; i<workings.length();i++){
-            if(isNumeric(workings.charAt(i))==true){
-                numberRight=numberRight+workings.charAt(i);
-            }
-            else
-                break;
-        }
-        for(int i=index-1; i >= 0;i--){
-            if(isNumeric(workings.charAt(i))==true){
-                numberLeft=workings.charAt(i)+numberLeft;
-            }
-            else
-                break;
-        }
-        String original = numberLeft+"^"+numberRight;
-        String changed = "Math.pow("+numberLeft+","+numberRight+")";
-        tempFormula = tempFormula.replace(original,changed);
+        formula = tempFormula;
     }
 
+    private void changeFormula(int index) {
+        String numberLeft = "", numberRight = "";
+
+        for (int i = index + 1; i < workings.length(); i++) {
+            if (isNumeric(workings.charAt(i))) {
+                numberRight += workings.charAt(i);
+            }
+            else {
+                break;
+            }
+        }
+        for (int i = index - 1; i >= 0; i--) {
+            if (isNumeric(workings.charAt(i))) {
+                numberLeft = workings.charAt(i) + numberLeft;
+            }
+            else {
+                break;
+            }
+        }
+        String original = numberLeft + "^" + numberRight;
+        String changed = "Math.pow(" + numberLeft + "," + numberRight + ")";
+        tempFormula = tempFormula.replace(original, changed);
+    }
+
+    private boolean isNumeric(char c) {
+        return Character.isDigit(c) || c == '.';
+    }
 
     public void clearOnClick(View view) {
         workingsTextView.setText("");
@@ -101,21 +98,19 @@ public class MainActivity extends AppCompatActivity {
         resultsTextView.setText("");
         leftBracket = true;
     }
-    boolean leftBracket = true;
 
-    public void bracketOnClick(View view){
-        if(leftBracket){
+    public void bracketOnClick(View view) {
+        if (leftBracket) {
             setWorkings("(");
             leftBracket = false;
-        }
-        else {
+        } else {
             setWorkings(")");
             leftBracket = true;
         }
     }
 
-    private void setWorkings(String givenValue){
-        workings=workings +givenValue;
+    private void setWorkings(String givenValue) {
+        workings += givenValue;
         workingsTextView.setText(workings);
     }
 
